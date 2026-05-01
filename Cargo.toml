@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 pandoc = "0.8.11"
 pandoc_ast = "0.8.6"
+regex = "1.12.3"
