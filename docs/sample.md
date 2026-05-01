@@ -4,7 +4,7 @@
 
 ### Header 3
 
-Sample text
+Byer shall not pay if no goods have been delivered
 
 + item A
 + item B

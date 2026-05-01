@@ -213,6 +213,25 @@ pub fn build_clauses(blocks: Vec<Block>) -> Vec<Clause> {
                 stack.push(new_clause);
             }
 
+            Block::Para(inlines) => {
+                let text = inline_to_text(&inlines);
+                let (role, domain) = detect_clause_type(&text);
+                println!("para: {:?}", text);
+                root.push(Clause {
+                    role,
+                    domain,
+                    aggregated_roles: vec![],
+                    aggregated_domains: vec![],
+                    primary_role: None,
+                    tags: vec![],
+                    level: 0,
+                    title: text,
+                    number: None,
+                    content: vec![],
+                    children: vec![],
+                });
+            }
+
             other => {
                 if let Some(current) = stack.last_mut() {
                     current.content.push(other);
