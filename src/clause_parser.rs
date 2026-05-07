@@ -195,7 +195,6 @@ pub fn build_clauses(blocks: Vec<Block>) -> Vec<Clause> {
                     children: Vec::new(),
                 };
 
-                // стек
                 while let Some(top) = stack.last() {
                     if top.level < level as i32 {
                         break;
