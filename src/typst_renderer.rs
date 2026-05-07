@@ -179,7 +179,13 @@ fn render_clause_into(
     }
 
     for child in &clause.children {
-        render_clause_into(out, child, results, opts);
+        if child.level >= 3 {
+            out.push_str("#pad(left: 1.5em)[\n");
+            render_clause_into(out, child, results, opts);
+            out.push_str("]\n\n");
+        } else {
+            render_clause_into(out, child, results, opts);
+        }
     }
 }
 
