@@ -16,7 +16,7 @@ impl Default for LlmConfig {
     fn default() -> Self {
         Self {
             base_url: "http://localhost:8080/completion".into(),
-            model: "Qwen3.5-27B.Q4_K_M.gguf".into(),
+            model: "gemma-4-E4B-it-Q4_K_M.gguf".into(),
             n_predict: 512,
             timeout_ms: 120_000,
             connect_timeout_ms: 5_000,
@@ -55,7 +55,7 @@ impl LlmClient {
 
     pub async fn complete(&self, system: &str, user: &str) -> Result<String> {
         let prompt = format!(
-            "<|im_start|>system\n{}<|im_end|>\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+            "<|turn>system\n{}<turn|>\n<|turn>user\n{}<turn|>\n<|turn>model\n<|channel>thought\n<channel|>",
             system, user
         );
 
@@ -63,7 +63,7 @@ impl LlmClient {
             prompt,
             n_predict: self.config.n_predict,
             temperature: 0.0,
-            stop: Some(vec!["<|im_end|>", "<|im_start|>"]),
+            stop: Some(vec!["<turn|>"]),
         };
 
         let response = self
@@ -80,7 +80,7 @@ impl LlmClient {
         }
 
         let resp: CompletionResponse = response.json().await?;
-        let content = strip_think_block(resp.content.trim());
+        let content = strip_thought_channel(resp.content.trim());
 
         if content.is_empty() {
             return Err(anyhow!("LLM returned empty content"));
@@ -90,11 +90,11 @@ impl LlmClient {
     }
 }
 
-fn strip_think_block(s: &str) -> String {
-    if let Some(end) = s.find("</think>") {
+fn strip_thought_channel(s: &str) -> String {
+    if let Some(end) = s.find("<channel|>") {
+        s[end + "<channel|>".len()..].trim().to_string()
+    } else if let Some(end) = s.find("</think>") {
         s[end + "</think>".len()..].trim().to_string()
-    } else if s.starts_with("<think>") {
-        String::new()
     } else {
         s.to_string()
     }
