@@ -9,6 +9,7 @@ use crate::llm::{LlmClient, LlmConfig};
 pub mod clause_parser;
 pub mod classifier;
 pub mod llm;
+pub mod versioning;
 
 #[tokio::main]
 async fn main() {

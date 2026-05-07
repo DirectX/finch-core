@@ -149,7 +149,33 @@ LLM calls are expensive even locally. Cache classification results by `content_h
 
 ### Phase 3 — Versioning and Diff
 
-**Goal:** Track changes at clause granularity, model negotiation lifecycle.
+**Goal:** Track changes at clause granularity, model negotiation lifecycle (state machine).
+
+```
+Draft → UnderReview → Negotiating → Agreed → Superseded
+  └──────────────────────────────→ Rejected → Draft
+```
+
+##### DocumentVersion (DAG node)
+Each version carries: id, document_id (stable logical ID), version_number, parent_ids: Vec<Uuid> (supports merges), state, author, message, created_at, and a full clauses snapshot. flat_clauses() walks the tree recursively and returns HashMap<Uuid, &Clause> for O(1) lookup.
+
+##### diff_versions (clause-level diff)
+
+Compares two versions by UUID identity:
+
+* Unchanged — same content_hash
+* Modified — different hash → Jaccard similarity score + both text snapshots
+* Added — UUID present only in to
+* Removed — UUID present only in from
+* Jaccard similarity operates on word token sets: |A ∩ B| / |A ∪ B|. Works well for legal text where repeated key terms signal * structural similarity.
+
+##### VersionStore (SQLite persistence)
+
+* open(path) — creates/opens DB, runs schema migration
+* save_version / load_version — full serialization via serde_json
+* get_history(document_id) — ordered list of all versions for a document
+* diff_by_ids(from, to) — load + diff in one call
+* next_version_number(document_id) — auto-incrementing version counter
 
 #### 3.1 Negotiation State
 
