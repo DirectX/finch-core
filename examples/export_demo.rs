@@ -15,8 +15,14 @@ use finch_core::docx_renderer::{DocxRenderer, DocxRenderOptions};
 use finch_core::typst_renderer::{TypstRenderer, TypstRenderOptions};
 use finch_core::versioning::{diff_versions, DocumentVersion, NegotiationState};
 use uuid::Uuid;
+use pandoc_ast::{Block, Inline};
 
-fn leaf(id: Uuid, title: &str, level: i32, role: ClauseRole, domain: ClauseDomain) -> Clause {
+fn leaf(id: Uuid, title: &str, level: i32, role: ClauseRole, domain: ClauseDomain, body: &str) -> Clause {
+    let content = if body.is_empty() {
+        vec![]
+    } else {
+        vec![Block::Para(vec![Inline::Str(body.to_string())])]
+    };
     Clause {
         id,
         content_hash: format!("{:x}", id.as_u128()),
@@ -29,7 +35,7 @@ fn leaf(id: Uuid, title: &str, level: i32, role: ClauseRole, domain: ClauseDomai
         level,
         title: title.to_string(),
         number: None,
-        content: vec![],
+        content,
         children: vec![],
     }
 }
@@ -101,10 +107,25 @@ fn build_demo_data() -> (Vec<Clause>, Vec<Clause>, HashMap<Uuid, ClassificationR
     let id_liability  = Uuid::new_v4();
     let id_term       = Uuid::new_v4();
 
-    let invoicing = leaf(id_invoicing, "2.1. Invoicing", 3, ClauseRole::Obligation, ClauseDomain::Payment);
-    let late_pay  = leaf(id_late,      "2.2. Late Payment", 3, ClauseRole::Obligation, ClauseDomain::Payment);
+    let invoicing = leaf(
+        id_invoicing, "2.1. Invoicing", 3, ClauseRole::Obligation, ClauseDomain::Payment,
+        "The Supplier shall issue invoices on the first business day of each calendar month for \
+         Services rendered in the preceding month. Each invoice shall itemise the Services \
+         performed, time spent, and applicable rates.",
+    );
+    let late_pay = leaf(
+        id_late, "2.2. Late Payment", 3, ClauseRole::Obligation, ClauseDomain::Payment,
+        "Amounts not paid by the due date shall accrue interest at the rate of eight percent \
+         (8%) per annum, compounded monthly, from the due date until the date of actual payment. \
+         The Supplier may suspend Services if any invoice remains unpaid for more than sixty (60) days.",
+    );
 
-    let mut payment = leaf(id_payment, "2. Payment Terms", 2, ClauseRole::Obligation, ClauseDomain::Payment);
+    let mut payment = leaf(
+        id_payment, "2. Payment Terms", 2, ClauseRole::Obligation, ClauseDomain::Payment,
+        "The Client shall pay all invoices submitted by the Supplier within thirty (30) days of \
+         the invoice date. All amounts are exclusive of applicable taxes, which shall be borne \
+         by the Client.",
+    );
     payment.children = vec![invoicing, late_pay];
 
     let root_v1 = Clause {
@@ -119,20 +140,56 @@ fn build_demo_data() -> (Vec<Clause>, Vec<Clause>, HashMap<Uuid, ClassificationR
         level: 1,
         title: "Service Agreement".into(),
         number: None,
-        content: vec![],
+        content: vec![Block::Para(vec![Inline::Str(
+            "This Service Agreement (\"Agreement\") is entered into as of the Effective Date \
+             between the Supplier and the Client as identified in the accompanying Order Form. \
+             The parties agree to the following terms and conditions governing the provision of Services."
+            .to_string(),
+        )])],
         children: vec![
-            leaf(id_defs, "1. Definitions", 2, ClauseRole::Condition, ClauseDomain::Definition),
+            leaf(
+                id_defs, "1. Definitions", 2, ClauseRole::Condition, ClauseDomain::Definition,
+                "\"Confidential Information\" means any information disclosed by one party to \
+                 the other that is designated as confidential or that reasonably should be \
+                 understood to be confidential given the nature of the information and \
+                 circumstances of disclosure. \"Services\" means the software development and \
+                 consulting services described in Schedule A attached hereto.",
+            ),
             payment,
-            leaf(id_conf, "3. Confidentiality", 2, ClauseRole::Prohibition, ClauseDomain::Confidentiality),
-            leaf(id_liability, "4. Limitation of Liability", 2, ClauseRole::Prohibition, ClauseDomain::Liability),
-            leaf(id_term, "5. Termination", 2, ClauseRole::Right, ClauseDomain::Termination),
+            leaf(
+                id_conf, "3. Confidentiality", 2, ClauseRole::Prohibition, ClauseDomain::Confidentiality,
+                "Each party shall hold the other's Confidential Information in strict confidence \
+                 and shall not disclose it to any third party without prior written consent. \
+                 Each party shall use the Confidential Information solely for the purposes of \
+                 this Agreement. This obligation survives termination for a period of five (5) years.",
+            ),
+            leaf(
+                id_liability, "4. Limitation of Liability", 2, ClauseRole::Prohibition, ClauseDomain::Liability,
+                "In no event shall either party be liable for any indirect, incidental, special, \
+                 or consequential damages, including loss of profits or data, even if advised of \
+                 the possibility thereof. The total aggregate liability of the Supplier under \
+                 this Agreement shall not exceed the fees paid by the Client in the one (1) \
+                 calendar month immediately preceding the event giving rise to the claim.",
+            ),
+            leaf(
+                id_term, "5. Termination", 2, ClauseRole::Right, ClauseDomain::Termination,
+                "Either party may terminate this Agreement upon thirty (30) days' written notice \
+                 to the other party. The Client may terminate immediately upon written notice if \
+                 the Supplier materially breaches this Agreement and fails to cure such breach \
+                 within ten (10) days of receiving written notice of the breach.",
+            ),
         ],
     };
 
     // v2: payment clause modified (different hash), confidentiality unchanged,
     //     a new "6. Governing Law" clause added, "5. Termination" removed
     let id_governing = Uuid::new_v4();
-    let mut payment_v2 = leaf(id_payment, "2. Payment Terms", 2, ClauseRole::Obligation, ClauseDomain::Payment);
+    let mut payment_v2 = leaf(
+        id_payment, "2. Payment Terms", 2, ClauseRole::Obligation, ClauseDomain::Payment,
+        "The Client shall pay all invoices within forty-five (45) days of the invoice date. \
+         All amounts are exclusive of applicable taxes. The Supplier reserves the right to \
+         adjust rates annually upon thirty (30) days' written notice.",
+    );
     payment_v2.content_hash = "payment_modified_v2".into();
 
     let root_v2 = Clause {
@@ -149,11 +206,37 @@ fn build_demo_data() -> (Vec<Clause>, Vec<Clause>, HashMap<Uuid, ClassificationR
         number: None,
         content: vec![],
         children: vec![
-            leaf(id_defs, "1. Definitions", 2, ClauseRole::Condition, ClauseDomain::Definition),
+            leaf(
+                id_defs, "1. Definitions", 2, ClauseRole::Condition, ClauseDomain::Definition,
+                "\"Confidential Information\" means any information disclosed by one party to \
+                 the other that is designated as confidential or that reasonably should be \
+                 understood to be confidential given the nature of the information and \
+                 circumstances of disclosure. \"Services\" means the software development and \
+                 consulting services described in Schedule A attached hereto.",
+            ),
             payment_v2,
-            leaf(id_conf, "3. Confidentiality", 2, ClauseRole::Prohibition, ClauseDomain::Confidentiality),
-            leaf(id_liability, "4. Limitation of Liability", 2, ClauseRole::Prohibition, ClauseDomain::Liability),
-            leaf(id_governing, "6. Governing Law", 2, ClauseRole::Condition, ClauseDomain::Definition),
+            leaf(
+                id_conf, "3. Confidentiality", 2, ClauseRole::Prohibition, ClauseDomain::Confidentiality,
+                "Each party shall hold the other's Confidential Information in strict confidence \
+                 and shall not disclose it to any third party without prior written consent. \
+                 Each party shall use the Confidential Information solely for the purposes of \
+                 this Agreement. This obligation survives termination for a period of five (5) years.",
+            ),
+            leaf(
+                id_liability, "4. Limitation of Liability", 2, ClauseRole::Prohibition, ClauseDomain::Liability,
+                "In no event shall either party be liable for any indirect, incidental, special, \
+                 or consequential damages, including loss of profits or data, even if advised of \
+                 the possibility thereof. The total aggregate liability of the Supplier under \
+                 this Agreement shall not exceed the fees paid by the Client in the one (1) \
+                 calendar month immediately preceding the event giving rise to the claim.",
+            ),
+            leaf(
+                id_governing, "6. Governing Law", 2, ClauseRole::Condition, ClauseDomain::Definition,
+                "This Agreement shall be governed by and construed in accordance with the laws \
+                 of England and Wales. Each party irrevocably submits to the exclusive jurisdiction \
+                 of the courts of England and Wales to settle any dispute arising out of or in \
+                 connection with this Agreement.",
+            ),
         ],
     };
 
