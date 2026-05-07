@@ -2,14 +2,11 @@ use std::{path::PathBuf, sync::{Arc, Mutex}};
 
 use pandoc_ast::Block;
 
-use crate::clause_parser::build_clauses;
-use crate::classifier::{ClassificationCache, Classifier};
-use crate::llm::{LlmClient, LlmConfig};
-
-pub mod clause_parser;
-pub mod classifier;
-pub mod llm;
-pub mod versioning;
+use finch_core::clause_parser::build_clauses;
+use finch_core::classifier::{ClassificationCache, Classifier};
+use finch_core::docx_renderer::DocxRenderer;
+use finch_core::llm::{LlmClient, LlmConfig};
+use finch_core::typst_renderer::{TypstRenderer, TypstRenderOptions};
 
 #[tokio::main]
 async fn main() {
@@ -50,22 +47,47 @@ async fn main() {
     let client = LlmClient::new(config);
     let classifier = Classifier::new(client, cache);
 
-    let results = classifier.classify_tree(&mut clauses).await;
+    let results_vec = classifier.classify_tree(&mut clauses).await;
 
     println!("\n--- Classification Results ---");
-    for (id, cr) in &results {
+    for (id, cr) in &results_vec {
         println!(
             "Clause {id}\n  role={:?}  domain={:?}  risk={}/5\n  tags={:?}\n  parties={:?}\n  summary={:?}\n",
             cr.role, cr.domain, cr.risk_score, cr.tags, cr.parties, cr.summary
         );
     }
 
+    let results: std::collections::HashMap<uuid::Uuid, finch_core::classifier::ClassificationResult> =
+        results_vec
+            .into_iter()
+            .filter_map(|(id_str, cr)| uuid::Uuid::parse_str(&id_str).ok().map(|id| (id, cr)))
+            .collect();
+
     let json = serde_json::to_string_pretty(&clauses).unwrap();
     std::fs::write("./docs/clauses.json", &json).unwrap();
     println!("Clause tree written to ./docs/clauses.json");
+
+    let docx_path = PathBuf::from("./docs/output.docx");
+    match DocxRenderer::render_clean(&clauses, "Service Agreement", &docx_path) {
+        Ok(()) => println!("DOCX written to {}", docx_path.display()),
+        Err(e) => eprintln!("DOCX render failed: {e}"),
+    }
+
+    let typ_opts = TypstRenderOptions {
+        title: "Service Agreement".into(),
+        author: Some("finch-core".into()),
+        date: None,
+        show_risk_scores: true,
+        show_role_badges: true,
+    };
+    let pdf_path = PathBuf::from("./docs/output.pdf");
+    match TypstRenderer::render_pdf(&clauses, &results, &pdf_path, &typ_opts) {
+        Ok(()) => println!("PDF written to {}", pdf_path.display()),
+        Err(e) => eprintln!("PDF render skipped: {e}"),
+    }
 }
 
-fn print_clauses(clauses: &[clause_parser::Clause], depth: usize) {
+fn print_clauses(clauses: &[finch_core::clause_parser::Clause], depth: usize) {
     for c in clauses {
         let indent = "  ".repeat(depth);
         println!(

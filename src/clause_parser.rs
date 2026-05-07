@@ -64,6 +64,15 @@ impl Clause {
         }
         parts.join(" ")
     }
+
+    pub fn body_text(&self) -> String {
+        self.content
+            .iter()
+            .map(block_to_text)
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    }
 }
 
 fn block_to_text(block: &Block) -> String {
