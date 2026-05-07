@@ -1,4 +1,3 @@
-# Finch Core — Legal Document Analysis System
 
 ## Project Objective
 
