@@ -263,6 +263,21 @@ LLM classification is slow. Return the parsed clause tree immediately from `POST
 
 ---
 
+### Phase 6 — Web Frontend
+
+**Goal:** Next.js 15 web UI for uploading documents, browsing clause trees, reviewing diffs, and monitoring risk — wired to the Phase 5 API via a fully typed SDK package.
+
+> Full plan: [PHASE6_FRONTEND.md](PHASE6_FRONTEND.md)
+
+Key points:
+- **Monorepo**: Turborepo + pnpm workspaces; Rust crate moves to `core/`, Next.js app lives in `apps/web/`
+- **`packages/sdk`**: Zod schemas mirroring every Rust type; typed fetch client + SSE parser
+- **Pages**: Upload (SSE-driven live classification), Document View (inline PATCH), Diff View, Risk Report, Dashboard
+- **State**: TanStack Query for server state; Zustand `classificationSlice` for SSE stream updates
+- **API gap**: `GET /documents` list endpoint needed in `core/src/api.rs` before the dashboard can be built
+
+---
+
 ## Dependency Plan
 
 | Crate | Purpose |
@@ -304,15 +319,19 @@ The `id: Uuid` is assigned once at document parse time and carried forward in al
 
 ## Immediate Next Steps (in order)
 
-1. Fix `Para` attachment bug in `build_clauses`
-2. Add `uuid` + `sha2` dependencies; assign `id` and `content_hash` on clause construction
-3. Add `serde` derives and write round-trip JSON test
-4. Restore full keyword classifier in `detect_clause_type`
-5. Implement `primary_role` assignment in `aggregate`
-6. Add `LlmConfig` + async HTTP client with `/v1/chat/completions` support
-7. Add SQLite-backed classification cache
-8. Implement `DocumentVersion` + flat-file snapshot store
-9. Implement clause tree diff using `similar`
-10. Build Typst renderer
-11. Build DOCX renderer with OOXML tracked-change markup
-12. Wire up `axum` API with streaming classification SSE
+1. ~~Fix `Para` attachment bug in `build_clauses`~~ ✓
+2. ~~Add `uuid` + `sha2` dependencies; assign `id` and `content_hash` on clause construction~~ ✓
+3. ~~Add `serde` derives and write round-trip JSON test~~ ✓
+4. ~~Restore full keyword classifier in `detect_clause_type`~~ ✓
+5. ~~Implement `primary_role` assignment in `aggregate`~~ ✓
+6. ~~Add `LlmConfig` + async HTTP client~~ ✓
+7. ~~Add SQLite-backed classification cache~~ ✓
+8. ~~Implement `DocumentVersion` + version store~~ ✓
+9. ~~Implement clause tree diff using `similar`~~ ✓
+10. ~~Build Typst renderer~~ ✓
+11. ~~Build DOCX renderer with OOXML tracked-change markup~~ ✓
+12. ~~Wire up `axum` API with streaming classification SSE~~ ✓
+13. Set up Turborepo monorepo; move Rust crate to `core/` — see [docs/PHASE6_FRONTEND.md](docs/PHASE6_FRONTEND.md)
+14. Scaffold `packages/sdk` with Zod schemas and typed client
+15. Add `GET /documents` list endpoint to `core/src/api.rs`
+16. Build `apps/web` Next.js frontend (Upload → Document View → Diff View → Risk Report → Dashboard)
