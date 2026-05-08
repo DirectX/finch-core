@@ -19,3 +19,8 @@ chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1"
 similar = "2"
 zip = "2"
+axum = { version = "0.8", features = ["multipart"] }
+tower-http = { version = "0.6", features = ["cors"] }
+tokio-stream = "0.1"
+tempfile = "3"
+futures = "0.3"

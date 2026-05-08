@@ -9,15 +9,22 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use finch_core::clause_parser::{Clause, ClauseDomain, ClauseRole};
 use finch_core::classifier::{ClassificationResult, ClauseEntities};
-use finch_core::docx_renderer::{DocxRenderer, DocxRenderOptions};
-use finch_core::typst_renderer::{TypstRenderer, TypstRenderOptions};
-use finch_core::versioning::{diff_versions, DocumentVersion, NegotiationState};
-use uuid::Uuid;
+use finch_core::clause_parser::{Clause, ClauseDomain, ClauseRole};
+use finch_core::renderers::docx_renderer::{DocxRenderOptions, DocxRenderer};
+use finch_core::renderers::typst_renderer::{TypstRenderOptions, TypstRenderer};
+use finch_core::versioning::{DocumentVersion, NegotiationState, diff_versions};
 use pandoc_ast::{Block, Inline};
+use uuid::Uuid;
 
-fn leaf(id: Uuid, title: &str, level: i32, role: ClauseRole, domain: ClauseDomain, body: &str) -> Clause {
+fn leaf(
+    id: Uuid,
+    title: &str,
+    level: i32,
+    role: ClauseRole,
+    domain: ClauseDomain,
+    body: &str,
+) -> Clause {
     let content = if body.is_empty() {
         vec![]
     } else {
@@ -53,12 +60,22 @@ fn main() {
     // ── 2. Redlined DOCX ───────────────────────────────────────────────────────
     let doc_id = Uuid::new_v4();
     let v1 = DocumentVersion::new(
-        doc_id, 1, vec![], NegotiationState::Draft,
-        "Alice", "Initial draft", clauses_v1.clone(),
+        doc_id,
+        1,
+        vec![],
+        NegotiationState::Draft,
+        "Alice",
+        "Initial draft",
+        clauses_v1.clone(),
     );
     let v2 = DocumentVersion::new(
-        doc_id, 2, vec![v1.id], NegotiationState::Negotiating,
-        "Bob", "Counter-proposal", clauses_v2.clone(),
+        doc_id,
+        2,
+        vec![v1.id],
+        NegotiationState::Negotiating,
+        "Bob",
+        "Counter-proposal",
+        clauses_v2.clone(),
     );
     let diff = diff_versions(&v1, &v2);
 
@@ -72,7 +89,15 @@ fn main() {
         author: "Bob".into(),
         date: "2025-05-07T00:00:00Z".into(),
     };
-    DocxRenderer::render_redlined(&diff, &v1.clauses, &v2.clauses, "Service Agreement — redlined", redline_path, &opts).unwrap();
+    DocxRenderer::render_redlined(
+        &diff,
+        &v1.clauses,
+        &v2.clauses,
+        "Service Agreement — redlined",
+        redline_path,
+        &opts,
+    )
+    .unwrap();
     println!("Redlined DOCX → {}", redline_path.display());
 
     // ── 3. Typst → PDF ─────────────────────────────────────────────────────────
@@ -87,7 +112,11 @@ fn main() {
     let typ_src = TypstRenderer::render_typ(&clauses_v1, &results, &typ_opts);
     let typ_path = Path::new("docs/demo_output.typ");
     std::fs::write(typ_path, &typ_src).unwrap();
-    println!("Typst source  → {} ({} bytes)", typ_path.display(), typ_src.len());
+    println!(
+        "Typst source  → {} ({} bytes)",
+        typ_path.display(),
+        typ_src.len()
+    );
 
     let pdf_path = Path::new("docs/demo_output.pdf");
     match TypstRenderer::render_pdf(&clauses_v1, &results, pdf_path, &typ_opts) {
@@ -98,30 +127,46 @@ fn main() {
     println!("\nDone. Open docs/ to inspect outputs.");
 }
 
-fn build_demo_data() -> (Vec<Clause>, Vec<Clause>, HashMap<Uuid, ClassificationResult>) {
-    let id_defs       = Uuid::new_v4();
-    let id_payment    = Uuid::new_v4();
-    let id_invoicing  = Uuid::new_v4();
-    let id_late       = Uuid::new_v4();
-    let id_conf       = Uuid::new_v4();
-    let id_liability  = Uuid::new_v4();
-    let id_term       = Uuid::new_v4();
+fn build_demo_data() -> (
+    Vec<Clause>,
+    Vec<Clause>,
+    HashMap<Uuid, ClassificationResult>,
+) {
+    let id_defs = Uuid::new_v4();
+    let id_payment = Uuid::new_v4();
+    let id_invoicing = Uuid::new_v4();
+    let id_late = Uuid::new_v4();
+    let id_conf = Uuid::new_v4();
+    let id_liability = Uuid::new_v4();
+    let id_term = Uuid::new_v4();
 
     let invoicing = leaf(
-        id_invoicing, "2.1. Invoicing", 3, ClauseRole::Obligation, ClauseDomain::Payment,
+        id_invoicing,
+        "2.1. Invoicing",
+        3,
+        ClauseRole::Obligation,
+        ClauseDomain::Payment,
         "The Supplier shall issue invoices on the first business day of each calendar month for \
          Services rendered in the preceding month. Each invoice shall itemise the Services \
          performed, time spent, and applicable rates.",
     );
     let late_pay = leaf(
-        id_late, "2.2. Late Payment", 3, ClauseRole::Obligation, ClauseDomain::Payment,
+        id_late,
+        "2.2. Late Payment",
+        3,
+        ClauseRole::Obligation,
+        ClauseDomain::Payment,
         "Amounts not paid by the due date shall accrue interest at the rate of eight percent \
          (8%) per annum, compounded monthly, from the due date until the date of actual payment. \
          The Supplier may suspend Services if any invoice remains unpaid for more than sixty (60) days.",
     );
 
     let mut payment = leaf(
-        id_payment, "2. Payment Terms", 2, ClauseRole::Obligation, ClauseDomain::Payment,
+        id_payment,
+        "2. Payment Terms",
+        2,
+        ClauseRole::Obligation,
+        ClauseDomain::Payment,
         "The Client shall pay all invoices submitted by the Supplier within thirty (30) days of \
          the invoice date. All amounts are exclusive of applicable taxes, which shall be borne \
          by the Client.",
@@ -185,7 +230,11 @@ fn build_demo_data() -> (Vec<Clause>, Vec<Clause>, HashMap<Uuid, ClassificationR
     //     a new "6. Governing Law" clause added, "5. Termination" removed
     let id_governing = Uuid::new_v4();
     let mut payment_v2 = leaf(
-        id_payment, "2. Payment Terms", 2, ClauseRole::Obligation, ClauseDomain::Payment,
+        id_payment,
+        "2. Payment Terms",
+        2,
+        ClauseRole::Obligation,
+        ClauseDomain::Payment,
         "The Client shall pay all invoices within forty-five (45) days of the invoice date. \
          All amounts are exclusive of applicable taxes. The Supplier reserves the right to \
          adjust rates annually upon thirty (30) days' written notice.",
@@ -207,7 +256,11 @@ fn build_demo_data() -> (Vec<Clause>, Vec<Clause>, HashMap<Uuid, ClassificationR
         content: vec![],
         children: vec![
             leaf(
-                id_defs, "1. Definitions", 2, ClauseRole::Condition, ClauseDomain::Definition,
+                id_defs,
+                "1. Definitions",
+                2,
+                ClauseRole::Condition,
+                ClauseDomain::Definition,
                 "\"Confidential Information\" means any information disclosed by one party to \
                  the other that is designated as confidential or that reasonably should be \
                  understood to be confidential given the nature of the information and \
@@ -216,14 +269,22 @@ fn build_demo_data() -> (Vec<Clause>, Vec<Clause>, HashMap<Uuid, ClassificationR
             ),
             payment_v2,
             leaf(
-                id_conf, "3. Confidentiality", 2, ClauseRole::Prohibition, ClauseDomain::Confidentiality,
+                id_conf,
+                "3. Confidentiality",
+                2,
+                ClauseRole::Prohibition,
+                ClauseDomain::Confidentiality,
                 "Each party shall hold the other's Confidential Information in strict confidence \
                  and shall not disclose it to any third party without prior written consent. \
                  Each party shall use the Confidential Information solely for the purposes of \
                  this Agreement. This obligation survives termination for a period of five (5) years.",
             ),
             leaf(
-                id_liability, "4. Limitation of Liability", 2, ClauseRole::Prohibition, ClauseDomain::Liability,
+                id_liability,
+                "4. Limitation of Liability",
+                2,
+                ClauseRole::Prohibition,
+                ClauseDomain::Liability,
                 "In no event shall either party be liable for any indirect, incidental, special, \
                  or consequential damages, including loss of profits or data, even if advised of \
                  the possibility thereof. The total aggregate liability of the Supplier under \
@@ -231,7 +292,11 @@ fn build_demo_data() -> (Vec<Clause>, Vec<Clause>, HashMap<Uuid, ClassificationR
                  calendar month immediately preceding the event giving rise to the claim.",
             ),
             leaf(
-                id_governing, "6. Governing Law", 2, ClauseRole::Condition, ClauseDomain::Definition,
+                id_governing,
+                "6. Governing Law",
+                2,
+                ClauseRole::Condition,
+                ClauseDomain::Definition,
                 "This Agreement shall be governed by and construed in accordance with the laws \
                  of England and Wales. Each party irrevocably submits to the exclusive jurisdiction \
                  of the courts of England and Wales to settle any dispute arising out of or in \
@@ -242,24 +307,80 @@ fn build_demo_data() -> (Vec<Clause>, Vec<Clause>, HashMap<Uuid, ClassificationR
 
     let mut results: HashMap<Uuid, ClassificationResult> = HashMap::new();
     for (id, role, domain, risk, reason, summary) in [
-        (id_defs,      ClauseRole::Condition,    ClauseDomain::Definition,      1, "Standard definitions",            "Defines key terms used throughout the agreement."),
-        (id_payment,   ClauseRole::Obligation,   ClauseDomain::Payment,         2, "Standard payment clause",         "Client shall pay invoices within 30 days."),
-        (id_invoicing, ClauseRole::Obligation,   ClauseDomain::Payment,         2, "Standard invoicing",              "Supplier issues monthly invoices."),
-        (id_late,      ClauseRole::Obligation,   ClauseDomain::Payment,         3, "Late interest may be high",       "Interest accrues at 8% p.a. on overdue amounts."),
-        (id_conf,      ClauseRole::Prohibition,  ClauseDomain::Confidentiality, 1, "Standard NDA language",           "Parties must keep disclosed information secret."),
-        (id_liability, ClauseRole::Prohibition,  ClauseDomain::Liability,       4, "Cap is unusually low",            "Total liability capped at one month's fees."),
-        (id_term,      ClauseRole::Right,        ClauseDomain::Termination,     2, "Standard termination for cause",  "Either party may terminate on 30 days written notice."),
+        (
+            id_defs,
+            ClauseRole::Condition,
+            ClauseDomain::Definition,
+            1,
+            "Standard definitions",
+            "Defines key terms used throughout the agreement.",
+        ),
+        (
+            id_payment,
+            ClauseRole::Obligation,
+            ClauseDomain::Payment,
+            2,
+            "Standard payment clause",
+            "Client shall pay invoices within 30 days.",
+        ),
+        (
+            id_invoicing,
+            ClauseRole::Obligation,
+            ClauseDomain::Payment,
+            2,
+            "Standard invoicing",
+            "Supplier issues monthly invoices.",
+        ),
+        (
+            id_late,
+            ClauseRole::Obligation,
+            ClauseDomain::Payment,
+            3,
+            "Late interest may be high",
+            "Interest accrues at 8% p.a. on overdue amounts.",
+        ),
+        (
+            id_conf,
+            ClauseRole::Prohibition,
+            ClauseDomain::Confidentiality,
+            1,
+            "Standard NDA language",
+            "Parties must keep disclosed information secret.",
+        ),
+        (
+            id_liability,
+            ClauseRole::Prohibition,
+            ClauseDomain::Liability,
+            4,
+            "Cap is unusually low",
+            "Total liability capped at one month's fees.",
+        ),
+        (
+            id_term,
+            ClauseRole::Right,
+            ClauseDomain::Termination,
+            2,
+            "Standard termination for cause",
+            "Either party may terminate on 30 days written notice.",
+        ),
     ] {
-        results.insert(id, ClassificationResult {
-            role: Some(role),
-            domain: Some(domain),
-            tags: vec![],
-            risk_score: risk,
-            risk_reason: reason.into(),
-            parties: vec!["Supplier".into(), "Client".into()],
-            entities: ClauseEntities { dates: vec![], amounts: vec![], governing_law: vec![] },
-            summary: Some(summary.into()),
-        });
+        results.insert(
+            id,
+            ClassificationResult {
+                role: Some(role),
+                domain: Some(domain),
+                tags: vec![],
+                risk_score: risk,
+                risk_reason: reason.into(),
+                parties: vec!["Supplier".into(), "Client".into()],
+                entities: ClauseEntities {
+                    dates: vec![],
+                    amounts: vec![],
+                    governing_law: vec![],
+                },
+                summary: Some(summary.into()),
+            },
+        );
     }
 
     (vec![root_v1], vec![root_v2], results)

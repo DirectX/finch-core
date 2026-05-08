@@ -111,7 +111,7 @@ fn extract_json_from_response(raw: &str) -> &str {
 }
 
 pub struct ClassificationCache {
-    conn: Connection,
+    conn: std::sync::Mutex<Connection>,
 }
 
 impl ClassificationCache {
@@ -124,12 +124,12 @@ impl ClassificationCache {
                 classified_at TEXT NOT NULL
             );",
         )?;
-        Ok(Self { conn })
+        Ok(Self { conn: std::sync::Mutex::new(conn) })
     }
 
     pub fn get(&self, content_hash: &str) -> Option<ClassificationResult> {
-        self.conn
-            .query_row(
+        let conn = self.conn.lock().unwrap();
+        conn.query_row(
                 "SELECT result_json FROM classification_cache WHERE content_hash = ?1",
                 params![content_hash],
                 |row| row.get::<_, String>(0),
@@ -141,7 +141,8 @@ impl ClassificationCache {
     pub fn set(&self, content_hash: &str, result: &ClassificationResult) -> Result<()> {
         let json = serde_json::to_string(result)?;
         let now = chrono::Utc::now().to_rfc3339();
-        self.conn.execute(
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
             "INSERT OR REPLACE INTO classification_cache (content_hash, result_json, classified_at)
              VALUES (?1, ?2, ?3)",
             params![content_hash, json, now],
