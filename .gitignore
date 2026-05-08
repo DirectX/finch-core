@@ -1,1 +1,7 @@
 /target
+/core/target
+node_modules
+.next
+.turbo
+dist
+*.db

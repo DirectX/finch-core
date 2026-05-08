@@ -16,7 +16,7 @@ use crate::clause_parser::{build_clauses, Clause};
 use crate::llm::{LlmClient, LlmConfig};
 use crate::renderers::docx_renderer::{DocxRenderer, DocxRenderOptions};
 use crate::renderers::typst_renderer::{TypstRenderOptions, TypstRenderer};
-use crate::versioning::{diff_versions, DocumentVersion, NegotiationState, VersionStore};
+use crate::versioning::{diff_versions, DocumentVersion, DocumentVersionSummary, NegotiationState, VersionStore};
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -70,7 +70,7 @@ type ApiResult<T> = Result<T, ApiError>;
 
 pub fn create_router(state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/documents", post(post_document))
+        .route("/documents", get(list_documents).post(post_document))
         .route("/documents/{id}", get(get_document))
         .route("/documents/{id}/clauses", get(get_document_clauses))
         .route("/documents/{id}/clauses/{cid}", patch(patch_clause))
@@ -157,6 +157,15 @@ fn update_clause_in_tree(
         }
     }
     false
+}
+
+// ── GET /documents ────────────────────────────────────────────────────────────
+
+async fn list_documents(
+    State(state): State<Arc<AppState>>,
+) -> ApiResult<Json<Vec<DocumentVersionSummary>>> {
+    let summaries = state.store.lock().unwrap().list_all()?;
+    Ok(Json(summaries))
 }
 
 // ── POST /documents ───────────────────────────────────────────────────────────

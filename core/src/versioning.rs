@@ -95,6 +95,17 @@ impl DocumentVersion {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DocumentVersionSummary {
+    pub id: Uuid,
+    pub document_id: Uuid,
+    pub version_number: u32,
+    pub state: NegotiationState,
+    pub author: String,
+    pub message: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ClauseDiffKind {
     Added,
     Removed,
@@ -290,6 +301,40 @@ impl VersionStore {
             |r| r.get(0),
         )?;
         Ok(n + 1)
+    }
+
+    pub fn list_all(&self) -> Result<Vec<DocumentVersionSummary>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, document_id, version_number, state, author, message, created_at
+             FROM document_versions
+             ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, u32>(2)?,
+                r.get::<_, String>(3)?,
+                r.get::<_, String>(4)?,
+                r.get::<_, String>(5)?,
+                r.get::<_, String>(6)?,
+            ))
+        })?;
+        let mut summaries = Vec::new();
+        for row in rows {
+            let (id, doc_id, vn, state, author, message, created_at) = row?;
+            summaries.push(DocumentVersionSummary {
+                id: Uuid::parse_str(&id)?,
+                document_id: Uuid::parse_str(&doc_id)?,
+                version_number: vn,
+                state: serde_json::from_str(&state)?,
+                author,
+                message,
+                created_at: created_at.parse::<DateTime<Utc>>()
+                    .map_err(|e| anyhow!("bad datetime: {e}"))?,
+            });
+        }
+        Ok(summaries)
     }
 }
 
