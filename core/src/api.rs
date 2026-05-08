@@ -5,8 +5,8 @@ use std::sync::{Arc, Mutex};
 use axum::extract::Multipart;
 use axum::response::sse::{Event, Sse};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, patch, post};
-use axum::{Json, Router, extract::{Path, State}, http::{StatusCode, header}};
+use axum::routing::{get, patch};
+use axum::{Json, Router, extract::{Path, Query, State}, http::{StatusCode, header}};
 use serde::{Deserialize, Serialize};
 use tokio_stream::wrappers::ReceiverStream;
 use uuid::Uuid;
@@ -75,8 +75,8 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/documents/{id}/clauses", get(get_document_clauses))
         .route("/documents/{id}/clauses/{cid}", patch(patch_clause))
         .route("/documents/{id}/diff/{other}", get(get_diff))
-        .route("/documents/{id}/render/pdf", post(post_render_pdf))
-        .route("/documents/{id}/render/docx", post(post_render_docx))
+        .route("/documents/{id}/render/pdf", get(get_render_pdf))
+        .route("/documents/{id}/render/docx", get(get_render_docx))
         .route("/documents/{id}/risk", get(get_risk))
         .with_state(state)
 }
@@ -420,7 +420,7 @@ async fn get_diff(
     Ok(Json(diff_versions(&from, &to)))
 }
 
-// ── POST /documents/:id/render/pdf ───────────────────────────────────────────
+// ── GET /documents/:id/render/pdf ───────────────────────────────────────────
 
 #[derive(Deserialize, Default)]
 struct RenderPdfRequest {
@@ -430,10 +430,10 @@ struct RenderPdfRequest {
     show_role_badges: Option<bool>,
 }
 
-async fn post_render_pdf(
+async fn get_render_pdf(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Uuid>,
-    body: Option<Json<RenderPdfRequest>>,
+    Query(req): Query<RenderPdfRequest>,
 ) -> ApiResult<Response> {
     let version = {
         let store = state.store.lock().unwrap();
@@ -441,8 +441,6 @@ async fn post_render_pdf(
             .load_version(id)
             .map_err(|_| ApiError::NotFound(format!("version {id} not found")))?
     };
-
-    let req = body.map(|b| b.0).unwrap_or_default();
 
     let opts = TypstRenderOptions {
         title: req
@@ -490,7 +488,7 @@ async fn post_render_pdf(
         .into_response())
 }
 
-// ── POST /documents/:id/render/docx ──────────────────────────────────────────
+// ── GET /documents/:id/render/docx ───────────────────────────────────────────
 
 #[derive(Deserialize, Default)]
 struct RenderDocxRequest {
@@ -499,12 +497,11 @@ struct RenderDocxRequest {
     author: Option<String>,
 }
 
-async fn post_render_docx(
+async fn get_render_docx(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Uuid>,
-    body: Option<Json<RenderDocxRequest>>,
+    Query(req): Query<RenderDocxRequest>,
 ) -> ApiResult<Response> {
-    let req = body.map(|b| b.0).unwrap_or_default();
     let title = req.title.unwrap_or_else(|| format!("Document {id}"));
     let author = req.author.unwrap_or_else(|| "finch-core".to_string());
 

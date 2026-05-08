@@ -9,6 +9,6 @@ llama-server \
   -m "$MODEL_PATH" \
   --chat-template-file "$TEMPLATE_FILE" \
   --cache-ram 2048 \
-  --ctx-size 8192 \
+  --ctx-size 100000 \
   --n-predict 512 \
   --n-gpu-layers 99  # Adjust based on your VRAM

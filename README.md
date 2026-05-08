@@ -128,5 +128,5 @@ cargo clippy --manifest-path core/Cargo.toml
 | `PATCH` | `/documents/:id/clauses/:cid` | Edit a clause title (creates new version) |
 | `GET` | `/documents/:id/diff/:other` | Word-level diff between two versions |
 | `GET` | `/documents/:id/risk` | Risk report for a version |
-| `POST` | `/documents/:id/render/pdf` | Render to PDF via Typst |
-| `POST` | `/documents/:id/render/docx` | Render to tracked-changes DOCX via Pandoc |
+| `GET` | `/documents/:id/render/pdf` | Render to PDF via Typst (query: `title`, `author`, `show_risk_scores`, `show_role_badges`) |
+| `GET` | `/documents/:id/render/docx` | Render to DOCX via Pandoc (query: `title`, `author`, `compare_to`) |
