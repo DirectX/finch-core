@@ -22,6 +22,6 @@ download_if_missing \
     "$MODELS_DIR/templates/google-gemma-4-31B-it-interleaved.jinja"
 
 # Uncomment to download the model weights (~4 GB):
-# download_if_missing \
-#     "https://huggingface.co/unsloth/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-E4B-it-Q4_K_M.gguf?download=true" \
-#     "$MODELS_DIR/gemma-4-E4B-it-Q4_K_M.gguf"
+download_if_missing \
+    "https://huggingface.co/unsloth/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-E4B-it-Q4_K_M.gguf?download=true" \
+    "$MODELS_DIR/gemma-4-E4B-it-Q4_K_M.gguf"
