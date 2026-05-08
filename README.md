@@ -42,7 +42,7 @@ finch-core/
 ### 1 — Clone and install JS dependencies
 
 ```bash
-git clone https://github.com/your-org/finch-core.git
+git clone https://github.com/DirectX/finch-core.git
 cd finch-core
 pnpm install
 ```
