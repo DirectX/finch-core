@@ -7,10 +7,13 @@ use finch_core::llm::LlmConfig;
 async fn main() -> anyhow::Result<()> {
     let llm_config = LlmConfig::default();
 
+    let docs_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/docs");
+    std::fs::create_dir_all(docs_dir)?;
+
     let state = Arc::new(
         AppState::new(
-            "./docs/finch_versions.db",
-            "./docs/finch_cache.db",
+            &format!("{docs_dir}/finch_versions.db"),
+            &format!("{docs_dir}/finch_cache.db"),
             llm_config,
         )?,
     );
