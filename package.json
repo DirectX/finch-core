@@ -4,8 +4,13 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
+    "dev:server": "pnpm --filter server dev",
+    "dev:web": "pnpm --filter @finch/web dev",
     "typecheck": "turbo typecheck",
-    "lint": "turbo lint"
+    "lint": "turbo lint",
+    "db:generate": "pnpm --filter server db:generate",
+    "db:migrate": "pnpm --filter server db:migrate",
+    "db:studio": "pnpm --filter server db:studio"
   },
   "devDependencies": {
     "turbo": "^2.5.4"

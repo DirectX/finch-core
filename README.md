@@ -22,6 +22,13 @@ finch-core/
 │   ├── models/         ← GGUF weights + Jinja templates
 │   └── scripts/
 ├── apps/
+│   ├── server/         ← TypeScript API (Hono) — port 4000
+│   │   ├── src/
+│   │   │   ├── db/     ← Drizzle ORM schema & migrations
+│   │   │   ├── routes/ ← API endpoints (auth, teams, projects)
+│   │   │   ├── middleware/
+│   │   │   └── lib/    ← Auth (JWT), S3 utilities
+│   │   └── drizzle/    ← Migration files
 │   └── web/            ← Next.js 15 (App Router) — port 3001
 └── packages/
     └── sdk/            ← Shared Zod schemas + typed fetch client
@@ -31,11 +38,13 @@ finch-core/
 
 | Tool | Version | Purpose |
 |---|---|---|
+| [Docker](https://docs.docker.com/get-docker/) | ≥ 20.x | Runs PostgreSQL and MinIO for development |
+| [Docker Compose](https://docs.docker.com/compose/install/) | ≥ 2.x | Orchestrates development infrastructure |
 | [Rust](https://rustup.rs) | stable (≥ 1.87) | Compiles the API server |
 | [Pandoc](https://pandoc.org/installing.html) | ≥ 3.x | Document parsing (`.docx`, `.md`, `.txt` → clause AST) |
 | [llama.cpp](https://github.com/ggerganov/llama.cpp) | latest | Local LLM inference server (`llama-server`) |
-| [Node.js](https://nodejs.org) | ≥ 20 LTS | Runs the Next.js frontend |
-| [pnpm](https://pnpm.io/installation) | ≥ 9 | Monorepo package manager |
+| [Node.js](https://nodejs.org) | ≥ 20 LTS | Runs the Next.js frontend and TypeScript API |
+| [pnpm](https://pnpm.io/installation) | ≥ 10 | Monorepo package manager |
 
 ## Setup
 
@@ -64,9 +73,47 @@ This places the Gemma 4B chat template in `core/models/templates/`. To download 
 
 Or download manually and place the `.gguf` file at `core/models/gemma-4-E4B-it-Q4_K_M.gguf`.
 
+### 3 — Configure environment variables
+
+Copy the example environment file and update with your own secrets:
+
+```bash
+cp .env.example .env
+```
+
+**Important:** Update the following values in `.env`:
+- `POSTGRES_PASSWORD` - Choose a strong password
+- `MINIO_ROOT_PASSWORD` - Choose a strong password
+- `JWT_SECRET` - Generate with `openssl rand -base64 32`
+- `S3_SECRET_KEY` - Should match `MINIO_ROOT_PASSWORD`
+
+See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for detailed configuration guide.
+
+### 4 — Start development infrastructure
+
+Start PostgreSQL and MinIO using Docker Compose:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+```
+
+This starts:
+- **PostgreSQL 17** on port 5432 (credentials from `.env`)
+- **MinIO** on ports 9000 (API) and 9001 (console, credentials from `.env`)
+
+### 5 — Run database migrations
+
+```bash
+pnpm db:migrate
+```
+
+This creates all necessary tables in PostgreSQL (users, teams, projects, contracts, clauses, etc.).
+
 ## Running
 
-All three services must be running at the same time. Open three terminals.
+You now have **four** services to run. The TypeScript API server (port 4000) handles authentication, teams, and collaboration, while the Rust API (port 3000) handles clause parsing and LLM classification.
+
+All services must be running at the same time. Open four terminals.
 
 ### Terminal 1 — LLM server (llama.cpp)
 
@@ -91,7 +138,15 @@ cargo run --release --manifest-path core/Cargo.toml
 
 The API listens on **http://localhost:3000**. SQLite databases are created automatically at `core/docs/finch_versions.db` and `core/docs/finch_cache.db` on first run.
 
-### Terminal 3 — Next.js web app
+### Terminal 3 — TypeScript API server
+
+```bash
+pnpm dev:server
+```
+
+The TypeScript API listens on **http://localhost:4000** and handles authentication, teams, projects, and collaboration features.
+
+### Terminal 4 — Next.js web app
 
 ```bash
 pnpm --filter @finch/web dev
@@ -104,10 +159,31 @@ Open **http://localhost:3001** in your browser.
 ## Development commands
 
 ```bash
+# Start infrastructure (PostgreSQL + MinIO)
+docker compose -f docker-compose.dev.yml up -d
+
+# Stop infrastructure
+docker compose -f docker-compose.dev.yml down
+
+# Run database migrations
+pnpm db:migrate
+
+# Generate new migration after schema changes
+pnpm db:generate
+
+# Open Drizzle Studio (database GUI)
+pnpm db:studio
+
+# Start TypeScript API server
+pnpm dev:server
+
+# Start Next.js web app
+pnpm dev:web
+
 # Type-check all TypeScript packages
 pnpm turbo typecheck
 
-# Build everything (SDK + web)
+# Build everything (SDK + web + server)
 pnpm turbo build
 
 # Run Rust unit tests
@@ -118,6 +194,8 @@ cargo clippy --manifest-path core/Cargo.toml
 ```
 
 ## API reference (brief)
+
+### Rust API (port 3000) — Clause Processing
 
 | Method | Path | Description |
 |---|---|---|
@@ -130,3 +208,17 @@ cargo clippy --manifest-path core/Cargo.toml
 | `GET` | `/documents/:id/risk` | Risk report for a version |
 | `GET` | `/documents/:id/render/pdf` | Render to PDF via Typst (query: `title`, `author`, `show_risk_scores`, `show_role_badges`) |
 | `GET` | `/documents/:id/render/docx` | Render to DOCX via Pandoc (query: `title`, `author`, `compare_to`) |
+
+### TypeScript API (port 4000) — Collaboration & Teams
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/auth/signup` | Create new user account |
+| `POST` | `/auth/login` | Login and receive JWT token |
+| `GET` | `/auth/me` | Get current user info (requires auth) |
+
+**Coming in Phase 2:**
+- Team management (`/teams`)
+- Project management (`/projects`)
+- Contract management (`/contracts`)
+- Clause collaboration (`/clauses/:id/comments`, `/clauses/:id/reviews`)
