@@ -4,6 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+pnpmfileChecksum: sha256-Pw+ViTHw8VDVf90kQ+nxviEXtNX6A4ACRh+PqqYC53o=
+
 importers:
 
   .:
@@ -24,7 +26,7 @@ importers:
         specifier: ^1.13.7
         version: 1.19.14(hono@4.12.18)
       bcrypt:
-        specifier: ^5.1.1
+        specifier: 5.1.1
         version: 5.1.1
       dotenv:
         specifier: ^17.4.2
