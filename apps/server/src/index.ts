@@ -11,6 +11,19 @@ app.use('/*', cors({
   credentials: true,
 }))
 
+app.get('/', (c) => c.json({
+  name: 'Finch Collaboration API',
+  version: '1.0.0',
+  endpoints: {
+    health: 'GET /health',
+    auth: {
+      signup: 'POST /auth/signup',
+      login: 'POST /auth/login',
+      me: 'GET /auth/me'
+    }
+  }
+}))
+
 app.get('/health', (c) => c.json({ status: 'ok' }))
 
 app.route('/auth', authRoutes)
