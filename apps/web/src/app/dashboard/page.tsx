@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { collabFetch } from "@/lib/collab-api";
 import Link from "next/link";
-import { FileTextIcon, ChevronRightIcon } from "lucide-react";
+import { FileTextIcon } from "lucide-react";
 
 interface Contract {
   id: string;
@@ -134,4 +134,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-th pl
