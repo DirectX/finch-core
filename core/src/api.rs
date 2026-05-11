@@ -274,7 +274,15 @@ async fn post_document(
         let classifier = Classifier::new(LlmClient::new(state.llm_config.clone()), cache);
         let flat = flat_clauses_owned(&version.clauses);
 
+        let total = flat.len();
+        let mut count = 0;
+
         for (clause_id, clause) in &flat {
+            count += 1;
+            let _ = tx
+                .send(Ok(Event::default().event("progress").data(format!("Classifying clause {count}/{total}..."))))
+                .await;
+
             match classifier.classify_clause(clause).await {
                 Ok(result) => {
                     if let Ok(json) = serde_json::to_string(&serde_json::json!({
@@ -286,7 +294,12 @@ async fn post_document(
                             .await;
                     }
                 }
-                Err(e) => eprintln!("Classification error for clause {clause_id}: {e}"),
+                Err(e) => {
+                    eprintln!("Classification error for clause {clause_id}: {e}");
+                    let _ = tx
+                        .send(Ok(Event::default().event("error").data(format!("Classification error: {e}"))))
+                        .await;
+                }
             }
         }
 
