@@ -5,6 +5,10 @@ import { cors } from 'hono/cors'
 import authRoutes from './routes/auth'
 import teamsRoutes from './routes/teams'
 import usersRoutes from './routes/users'
+import projectsRoutes from './routes/projects'
+import foldersRoutes from './routes/folders'
+import contractsRoutes from './routes/contracts'
+import clausesRoutes from './routes/clauses'
 
 const app = new Hono()
 
@@ -40,6 +44,51 @@ app.get('/', (c) => c.json({
         update: 'PATCH /teams/:id/members/:memberId',
         remove: 'DELETE /teams/:id/members/:memberId'
       }
+    },
+    projects: {
+      list: 'GET /projects',
+      create: 'POST /projects',
+      get: 'GET /projects/:id',
+      update: 'PATCH /projects/:id',
+      delete: 'DELETE /projects/:id',
+      members: {
+        list: 'GET /projects/:id/members',
+        add: 'POST /projects/:id/members',
+        update: 'PATCH /projects/:id/members/:memberId',
+        remove: 'DELETE /projects/:id/members/:memberId'
+      }
+    },
+    folders: {
+      listByProject: 'GET /folders/project/:projectId',
+      listRootFolders: 'GET /folders/project/:projectId/root',
+      create: 'POST /folders',
+      get: 'GET /folders/:id',
+      getChildren: 'GET /folders/:id/children',
+      update: 'PATCH /folders/:id',
+      delete: 'DELETE /folders/:id'
+    },
+    contracts: {
+      list: 'GET /contracts?projectId=:projectId&folderId=:folderId',
+      create: 'POST /contracts',
+      get: 'GET /contracts/:id',
+      update: 'PATCH /contracts/:id',
+      delete: 'DELETE /contracts/:id',
+      versions: 'GET /contracts/:id/versions',
+      versionClauses: 'GET /contracts/:id/versions/:versionId/clauses',
+      documents: 'GET /contracts/:id/documents'
+    },
+    clauses: {
+      get: 'GET /clauses/:id',
+      comments: {
+        list: 'GET /clauses/:id/comments',
+        create: 'POST /clauses/:id/comments',
+        delete: 'DELETE /clauses/:id/comments/:commentId'
+      },
+      reviews: {
+        list: 'GET /clauses/:id/reviews',
+        createOrUpdate: 'POST /clauses/:id/reviews',
+        delete: 'DELETE /clauses/:id/reviews/:reviewId'
+      }
     }
   }
 }))
@@ -49,6 +98,10 @@ app.get('/health', (c) => c.json({ status: 'ok' }))
 app.route('/auth', authRoutes)
 app.route('/teams', teamsRoutes)
 app.route('/users', usersRoutes)
+app.route('/projects', projectsRoutes)
+app.route('/folders', foldersRoutes)
+app.route('/contracts', contractsRoutes)
+app.route('/clauses', clausesRoutes)
 
 const port = parseInt(process.env.PORT || '4000')
 
