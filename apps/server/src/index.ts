@@ -3,6 +3,8 @@ import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import { cors } from 'hono/cors'
 import authRoutes from './routes/auth'
+import teamsRoutes from './routes/teams'
+import usersRoutes from './routes/users'
 
 const app = new Hono()
 
@@ -20,6 +22,24 @@ app.get('/', (c) => c.json({
       signup: 'POST /auth/signup',
       login: 'POST /auth/login',
       me: 'GET /auth/me'
+    },
+    users: {
+      me: 'GET /users/me',
+      updateMe: 'PATCH /users/me',
+      getUser: 'GET /users/:id'
+    },
+    teams: {
+      list: 'GET /teams',
+      create: 'POST /teams',
+      get: 'GET /teams/:id',
+      update: 'PATCH /teams/:id',
+      delete: 'DELETE /teams/:id',
+      members: {
+        list: 'GET /teams/:id/members',
+        add: 'POST /teams/:id/members',
+        update: 'PATCH /teams/:id/members/:memberId',
+        remove: 'DELETE /teams/:id/members/:memberId'
+      }
     }
   }
 }))
@@ -27,6 +47,8 @@ app.get('/', (c) => c.json({
 app.get('/health', (c) => c.json({ status: 'ok' }))
 
 app.route('/auth', authRoutes)
+app.route('/teams', teamsRoutes)
+app.route('/users', usersRoutes)
 
 const port = parseInt(process.env.PORT || '4000')
 
