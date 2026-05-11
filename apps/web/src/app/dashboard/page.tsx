@@ -16,6 +16,15 @@ interface Contract {
   updatedAt: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  teamId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const statusColumns = [
   { id: "draft", label: "Draft", color: "bg-gray-100 dark:bg-gray-800" },
   { id: "review", label: "In Review", color: "bg-yellow-100 dark:bg-yellow-900" },
@@ -25,13 +34,29 @@ const statusColumns = [
 ];
 
 export default function DashboardPage() {
-  const { data: allContracts, isLoading } = useQuery<Contract[]>({
-    queryKey: ["all-contracts"],
-    queryFn: async () => {
-      const contracts: Contract[] = [];
-      return contracts;
-    },
+  const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
+    queryKey: ["projects"],
+    queryFn: () => collabFetch("/projects"),
   });
+
+  const { data: allContracts, isLoading: contractsLoading } = useQuery<Contract[]>({
+    queryKey: ["all-contracts", projects],
+    queryFn: async () => {
+      if (!projects || projects.length === 0) {
+        return [];
+      }
+
+      const contractPromises = projects.map((project) =>
+        collabFetch<Contract[]>(`/contracts?projectId=${project.id}`).catch(() => [])
+      );
+
+      const contractArrays = await Promise.all(contractPromises);
+      return contractArrays.flat();
+    },
+    enabled: !!projects && projects.length > 0,
+  });
+
+  const isLoading = projectsLoading || contractsLoading;
 
   const contractsByStatus = statusColumns.map((column) => ({
     ...column,
@@ -109,3 +134,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+th pl
