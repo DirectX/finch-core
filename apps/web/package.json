@@ -10,15 +10,17 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@brief-jetzt/wasm-typst": "^0.13.1",
     "@finch/sdk": "workspace:*",
     "@tanstack/react-query": "^5.68.0",
+    "lucide-react": "^1.14.0",
     "next": "^15.3.2",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
     "react-diff-viewer-continued": "^4.0.0",
+    "react-dom": "^19.1.0",
     "recharts": "^2.15.3",
-    "zustand": "^5.0.3",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.6",

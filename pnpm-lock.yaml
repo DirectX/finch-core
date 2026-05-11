@@ -71,12 +71,18 @@ importers:
 
   apps/web:
     dependencies:
+      '@brief-jetzt/wasm-typst':
+        specifier: ^0.13.1
+        version: 0.13.1
       '@finch/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
       '@tanstack/react-query':
         specifier: ^5.68.0
         version: 5.100.9(react@19.2.6)
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.14.0(react@19.2.6)
       next:
         specifier: ^15.3.2
         version: 15.5.18(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -345,6 +351,9 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@brief-jetzt/wasm-typst@0.13.1':
+    resolution: {integrity: sha512-TYO7JSWk6sYnfvH9jvwiikygv+lIJK9nsgg+8ovGyKNN+HuCHNSn3sVKHzWCd/Sxmr57lYRYR1l7A7unaLSzCw==}
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
@@ -1969,6 +1978,11 @@ packages:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
 
+  lucide-react@1.14.0:
+    resolution: {integrity: sha512-+1mdWcfSJVUsaTIjN9zoezmUhfXo5l0vP7ekBMPo3jcS/aIkxHnXqAPsByszMZx/Y8oQBRJxJx5xg+RH3urzxA==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -2911,6 +2925,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
+
+  '@brief-jetzt/wasm-typst@0.13.1': {}
 
   '@drizzle-team/brocli@0.10.2': {}
 
@@ -4297,6 +4313,10 @@ snapshots:
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
+
+  lucide-react@1.14.0(react@19.2.6):
+    dependencies:
+      react: 19.2.6
 
   magic-string@0.30.21:
     dependencies:

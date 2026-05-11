@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { apiClient } from "@/lib/api";
 import type { Clause } from "@finch/sdk";
+import { ClauseReview } from "@/components/ClauseReview";
 
 export default function DocumentViewPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,6 +112,7 @@ function ClauseNode({
             {clause.domain}
           </span>
         )}
+        <ClauseReview clauseId={clause.id} />
       </div>
       {clause.children.map((child) => (
         <ClauseNode

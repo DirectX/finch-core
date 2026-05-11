@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { apiClient } from "@/lib/api";
+import { FolderIcon, LayoutDashboardIcon } from "lucide-react";
 
 export default function DashboardPage() {
   const { data, isLoading, error } = useQuery({
@@ -13,13 +14,29 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Documents</h1>
-        <Link
-          href="/upload"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-        >
-          Upload Document
-        </Link>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex gap-2">
+          <Link
+            href="/dashboard"
+            className="px-4 py-2 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-lg text-sm font-medium hover:bg-purple-200 flex items-center gap-2"
+          >
+            <LayoutDashboardIcon className="w-4 h-4" />
+            Pipeline
+          </Link>
+          <Link
+            href="/projects"
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 flex items-center gap-2"
+          >
+            <FolderIcon className="w-4 h-4" />
+            Projects
+          </Link>
+          <Link
+            href="/upload"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+          >
+            Upload Document
+          </Link>
+        </div>
       </div>
 
       {isLoading && (
